@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>המעבר של אבא ואמא - ניהול משימות שיתופי בזמן אמת</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts - Heebo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Vue.js 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Heebo', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Heebo', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: white;
+                font-size: 12pt;
+            }
+            .print-shadow-none {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0;
+            }
+            .print-break-inside-avoid {
+                break-inside: avoid;
+            }
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .pulse-indicator {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col antialiased selection:bg-sky-100 selection:text-sky-900">
+
+    <div id="app" class="flex-1 flex flex-col" v-cloak>
+        
+        <!-- HEADER / NAVBAR -->
+        <header class="bg-gradient-to-r from-sky-700 via-sky-600 to-indigo-700 text-white shadow-lg no-print sticky top-0 z-30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <div class="p-2.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-inner">
+                            <i class="fa-solid fa-house-chimney-window text-2xl sm:text-3xl text-white"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight">המעבר של אבא ואמא 🏠</h1>
+                                <span 
+                                    v-if="connectionStatus === 'connected'" 
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30"
+                                    title="מסונכרן בזמן אמת מול הענן"
+                                >
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-indicator"></span>
+                                    <span>מחובר בזמן אמת</span>
+                                </span>
+                                <span 
+                                    v-else-if="connectionStatus === 'connecting'" 
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-200 border border-amber-400/30"
+                                >
+                                    <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+                                    <span>מתחבר...</span>
+                                </span>
+                            </div>
+                            <p class="text-sky-100 text-xs sm:text-sm font-medium mt-0.5">ניהול שיתופי בזמן אמת, רשימת משימות, תקציב וארגון יעיל</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button 
+                            @click="openAddModal()" 
+                            class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl font-bold shadow-md transition-all duration-200 transform active:scale-95 text-sm sm:text-base"
+                        >
+                            <i class="fa-solid fa-plus text-base"></i>
+                            <span>הוסף משימה</span>
+                        </button>
+                        
+                        <button 
+                            @click="printTasks()" 
+                            title="הדפסת טבלה" 
+                            class="p-2.5 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-xl transition-colors border border-white/20 text-white"
+                        >
+                            <i class="fa-solid fa-print text-lg"></i>
+                        </button>
+
+                        <button 
+                            @click="promptResetData()" 
+                            title="איפוס לנתונים המקוריים" 
+                            class="p-2.5 bg-white/10 hover:bg-rose-500/80 rounded-xl transition-colors border border-white/20 text-white"
+                        >
+                            <i class="fa-solid fa-rotate-right text-lg"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTAINER -->
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+            <!-- DASHBOARD STATS CARDS -->
+            <section class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 no-print">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs sm:text-sm font-semibold text-slate-500">סה"כ משימות</p>
+                        <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-1">{{ filteredTasks.length }}</p>
+                        <span class="text-xs text-slate-400">מתוך {{ tasks.length }} קיימות</span>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs sm:text-sm font-semibold text-slate-500">בוצעו בהצלחה</p>
+                        <p class="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-1">{{ completedCount }}</p>
+                        <span class="text-xs text-emerald-600 font-semibold">{{ completionPercentage }}% הושלמו</span>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs sm:text-sm font-semibold text-slate-500">עדיפות גבוהה</p>
+                        <p class="text-2xl sm:text-3xl font-extrabold text-rose-600 mt-1">{{ highPriorityPendingCount }}</p>
+                        <span class="text-xs text-rose-500 font-medium">המשימות הדחופות</span>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs sm:text-sm font-semibold text-slate-500">מחיר משוער כולל</p>
+                        <p class="text-2xl sm:text-3xl font-extrabold text-indigo-700 mt-1">₪{{ totalEstimatedCost.toLocaleString() }}</p>
+                        <span class="text-xs text-slate-400">עבור התוצאות המוצגות</span>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid fa-shekel-sign"></i>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PROGRESS BAR -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 no-print">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-bars-progress text-sky-600"></i>
+                        התקדמות הכללית במעבר הדירה של אבא ואמא
+                    </span>
+                    <span class="text-sm font-extrabold text-sky-600">{{ completionPercentage }}%</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-200">
+                    <div 
+                        class="bg-gradient-to-r from-sky-500 to-emerald-500 h-full rounded-full transition-all duration-500 shadow-sm"
+                        :style="{ width: completionPercentage + '%' }"
+                    ></div>
+                </div>
+            </div>
+
+            <!-- FILTERS & SEARCH CONTROL PANEL -->
+            <section class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80 space-y-4 no-print">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
+                    
+                    <div class="md:col-span-4 relative">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">חיפוש חופשי</label>
+                        <div class="relative">
+                            <input 
+                                v-model="searchQuery"
+                                type="text" 
+                                placeholder="חפש משימה, פירוט או קטגוריה..."
+                                class="w-full pl-9 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition-all"
+                            >
+                            <i class="fa-solid fa-magnifying-glass absolute right-3 top-3 text-slate-400"></i>
+                            <button 
+                                v-if="searchQuery" 
+                                @click="searchQuery = ''" 
+                                class="absolute left-3 top-2.5 text-slate-400 hover:text-slate-600"
+                            >
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">סינון לפי קטגוריה</label>
+                        <select 
+                            v-model="selectedCategory"
+                            class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition-all font-medium text-slate-700"
+                        >
+                            <option value="ALL">כל הקטגוריות ({{ tasks.length }})</option>
+                            <option v-for="cat in categories" :key="cat" :value="cat">
+                                {{ cat }} ({{ getCategoryTaskCount(cat) }})
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">סינון לפי עדיפות</label>
+                        <select 
+                            v-model="selectedPriority"
+                            class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition-all font-medium text-slate-700"
+                        >
+                            <option value="ALL">כל רמות העדיפות</option>
+                            <option value="גבוהה">🔴 עדיפות גבוהה</option>
+                            <option value="בינונית">🟠 עדיפות בינונית</option>
+                            <option value="נמוכה">🟢 עדיפות נמוכה</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">סטאטוס ביצוע</label>
+                        <select 
+                            v-model="selectedStatus"
+                            class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition-all font-medium text-slate-700"
+                        >
+                            <option value="ALL">הכל</option>
+                            <option value="PENDING">לביצוע</option>
+                            <option value="COMPLETED">הושלם ✓</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 text-xs sm:text-sm">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-bold text-slate-400">מיון לפי:</span>
+                        <button 
+                            @click="setSort('priority')" 
+                            :class="sortBy === 'priority' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                        >
+                            <i class="fa-solid fa-arrow-down-short-wide"></i>
+                            עדיפות
+                        </button>
+                        <button 
+                            @click="setSort('category')" 
+                            :class="sortBy === 'category' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                        >
+                            <i class="fa-solid fa-layer-group"></i>
+                            קטגוריה
+                        </button>
+                        <button 
+                            @click="setSort('title')" 
+                            :class="sortBy === 'title' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                        >
+                            <i class="fa-solid fa-font"></i>
+                            שם משימה
+                        </button>
+                        <button 
+                            @click="setSort('cost')" 
+                            :class="sortBy === 'cost' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                            class="px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                        >
+                            <i class="fa-solid fa-shekel-sign"></i>
+                            מחיר
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                        <button 
+                            @click="viewMode = 'table'" 
+                            :class="viewMode === 'table' ? 'bg-white shadow text-sky-700 font-bold' : 'text-slate-500 hover:text-slate-800'"
+                            class="px-3 py-1 rounded-lg transition-all flex items-center gap-1 text-xs"
+                        >
+                            <i class="fa-solid fa-table-cells"></i>
+                            טבלה
+                        </button>
+                        <button 
+                            @click="viewMode = 'grouped'" 
+                            :class="viewMode === 'grouped' ? 'bg-white shadow text-sky-700 font-bold' : 'text-slate-500 hover:text-slate-800'"
+                            class="px-3 py-1 rounded-lg transition-all flex items-center gap-1 text-xs"
+                        >
+                            <i class="fa-solid fa-folder-tree"></i>
+                            לפי קטגוריות
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW MODE 1: DATA TABLE -->
+            <section v-if="viewMode === 'table'" class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden print-shadow-none">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-right border-collapse min-w-[800px]">
+                        <thead>
+                            <tr class="bg-slate-800 text-white text-sm font-bold">
+                                <th class="p-3.5 w-12 text-center no-print">
+                                    <span class="sr-only">סטאטוס</span>
+                                </th>
+                                <th class="p-3.5 w-36">קטגוריה</th>
+                                <th class="p-3.5 w-52">משימה / פריט</th>
+                                <th class="p-3.5">פירוט / מה לבדוק</th>
+                                <th class="p-3.5 w-28 text-center">עדיפות</th>
+                                <th class="p-3.5 w-32 text-center">מחיר משוער</th>
+                                <th class="p-3.5 w-44">הערות</th>
+                                <th class="p-3.5 w-20 text-center no-print">פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-sm">
+                            <tr 
+                                v-for="task in filteredTasks" 
+                                :key="task.id"
+                                :class="{ 'bg-emerald-50/60 text-slate-500': task.completed, 'hover:bg-slate-50/80': !task.completed }"
+                                class="transition-colors group"
+                            >
+                                <td class="p-3.5 text-center no-print">
+                                    <input 
+                                        type="checkbox" 
+                                        :checked="task.completed" 
+                                        @change="toggleTaskStatus(task)"
+                                        class="w-5 h-5 rounded-md border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer accent-sky-600 transition-all"
+                                    >
+                                </td>
+
+                                <td class="p-3.5 font-semibold text-slate-700">
+                                    <span class="inline-block px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold">
+                                        {{ task.category || '-' }}
+                                    </span>
+                                </td>
+
+                                <td class="p-3.5 font-bold text-slate-900" :class="{ 'line-through text-slate-400': task.completed }">
+                                    {{ task.title }}
+                                </td>
+
+                                <td class="p-3.5 text-slate-600 leading-relaxed" :class="{ 'line-through text-slate-400': task.completed }">
+                                    {{ task.details || '-' }}
+                                </td>
+
+                                <td class="p-3.5 text-center whitespace-nowrap">
+                                    <span 
+                                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-extrabold"
+                                        :class="getPriorityClass(task.priority)"
+                                    >
+                                        <i class="fa-solid fa-circle text-[8px]"></i>
+                                        {{ task.priority || 'ללא' }}
+                                    </span>
+                                </td>
+
+                                <td class="p-3.5 text-center font-bold text-slate-800">
+                                    <span v-if="task.cost > 0" class="text-indigo-700">₪{{ Number(task.cost).toLocaleString() }}</span>
+                                    <span v-else class="text-slate-300 font-normal">-</span>
+                                </td>
+
+                                <td class="p-3.5 text-slate-500 text-xs leading-relaxed italic">
+                                    {{ task.notes || '-' }}
+                                </td>
+
+                                <td class="p-3.5 text-center no-print">
+                                    <div class="flex items-center justify-center gap-1 opacity-80 group-hover:opacity-100">
+                                        <button 
+                                            @click="openEditModal(task)" 
+                                            title="עריכה" 
+                                            class="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"
+                                        >
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </button>
+                                        <button 
+                                            @click="promptDeleteTask(task)" 
+                                            title="מחיקה" 
+                                            class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                        >
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr v-if="filteredTasks.length === 0">
+                                <td colspan="8" class="p-12 text-center text-slate-400">
+                                    <div class="flex flex-col items-center justify-center gap-3">
+                                        <i class="fa-solid fa-clipboard-list text-4xl text-slate-300"></i>
+                                        <p class="text-base font-semibold">לא נמצאו משימות התואמות את הסינון.</p>
+                                        <button 
+                                            @click="clearFilters()" 
+                                            class="text-xs text-sky-600 font-bold hover:underline"
+                                        >
+                                            ניקוי מסננים
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- VIEW MODE 2: GROUPED BY CATEGORY (MOBILE FRIENDLY) -->
+            <section v-if="viewMode === 'grouped'" class="space-y-6">
+                <div 
+                    v-for="(groupTasks, catName) in groupedTasks" 
+                    :key="catName"
+                    class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 print-break-inside-avoid"
+                >
+                    <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <span class="p-2 bg-sky-100 text-sky-700 rounded-xl text-lg font-bold">
+                                <i class="fa-solid fa-folder-open"></i>
+                            </span>
+                            <h2 class="text-lg font-bold text-slate-800">{{ catName }}</h2>
+                            <span class="px-2.5 py-0.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">
+                                {{ groupTasks.length }} משימות
+                            </span>
+                        </div>
+                        
+                        <div class="text-xs font-semibold text-slate-500">
+                            הושלמו: {{ groupTasks.filter(t => t.completed).length }} / {{ groupTasks.length }}
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div 
+                            v-for="task in groupTasks" 
+                            :key="task.id"
+                            :class="{ 'bg-emerald-50/70 border-emerald-200': task.completed, 'bg-slate-50/80 border-slate-200 hover:border-sky-300': !task.completed }"
+                            class="p-4 rounded-xl border transition-all flex flex-col justify-between space-y-3 relative group"
+                        >
+                            <div class="space-y-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <input 
+                                            type="checkbox" 
+                                            :checked="task.completed" 
+                                            @change="toggleTaskStatus(task)"
+                                            class="w-5 h-5 rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer accent-sky-600 no-print"
+                                        >
+                                        <h3 class="font-bold text-slate-900 text-base" :class="{ 'line-through text-slate-400': task.completed }">
+                                            {{ task.title }}
+                                        </h3>
+                                    </div>
+                                    <span 
+                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold shrink-0"
+                                        :class="getPriorityClass(task.priority)"
+                                    >
+                                        {{ task.priority || 'ללא' }}
+                                    </span>
+                                </div>
+
+                                <p v-if="task.details" class="text-xs text-slate-600 leading-relaxed pl-1" :class="{ 'line-through text-slate-400': task.completed }">
+                                    <strong class="font-semibold text-slate-700">פירוט:</strong> {{ task.details }}
+                                </p>
+
+                                <p v-if="task.notes" class="text-xs text-slate-500 italic bg-white/60 p-2 rounded-lg border border-slate-100">
+                                    💡 {{ task.notes }}
+                                </p>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-2 border-t border-slate-200/60 text-xs">
+                                <span v-if="task.cost > 0" class="font-bold text-indigo-700">
+                                    ₪{{ Number(task.cost).toLocaleString() }}
+                                </span>
+                                <span v-else class="text-slate-400">ללא עלות משוערת</span>
+
+                                <div class="flex items-center gap-1 no-print">
+                                    <button @click="openEditModal(task)" class="p-1.5 text-slate-400 hover:text-sky-600 rounded">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <button @click="promptDeleteTask(task)" class="p-1.5 text-slate-400 hover:text-rose-600 rounded">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- FLOATING ACTION BUTTON FOR MOBILE -->
+        <button 
+            @click="openAddModal()" 
+            class="sm:hidden fixed bottom-5 left-5 z-40 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all duration-200 border-2 border-white focus:outline-none"
+            aria-label="הוסף משימה"
+        >
+            <i class="fa-solid fa-plus text-2xl"></i>
+        </button>
+
+        <!-- ADD / EDIT TASK MODAL -->
+        <div 
+            v-if="showModal" 
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print overflow-y-auto"
+            @click.self="closeModal()"
+        >
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 transform transition-all my-8">
+                <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid text-sky-400 text-lg" :class="isEditing ? 'fa-pen-to-square' : 'fa-circle-plus'"></i>
+                        <h3 class="text-lg font-bold">
+                            {{ isEditing ? 'עריכת משימה' : 'הוספת משימה חדשה למעבר' }}
+                        </h3>
+                    </div>
+                    <button @click="closeModal()" class="text-slate-400 hover:text-white p-1 text-xl">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <form @submit.prevent="saveTask()" class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">
+                            משימה / פריט <span class="text-rose-500">*</span>
+                        </label>
+                        <input 
+                            v-model="form.title" 
+                            type="text" 
+                            required
+                            placeholder="לדוגמה: אריזת כלי מטבח / הזמנת טכנאי"
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-sm"
+                        >
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">קטגוריה</label>
+                            <input 
+                                v-model="form.category" 
+                                list="categories-list"
+                                placeholder="בחר או הקלד קטגוריה"
+                                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 text-sm"
+                            >
+                            <datalist id="categories-list">
+                                <option v-for="cat in categories" :key="cat" :value="cat"></option>
+                            </datalist>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">עדיפות</label>
+                            <select 
+                                v-model="form.priority"
+                                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 text-sm font-medium"
+                            >
+                                <option value="גבוהה">🔴 גבוהה</option>
+                                <option value="בינונית">🟠 בינונית</option>
+                                <option value="נמוכה">🟢 נמוכה</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">פירוט / מה לבדוק</label>
+                        <textarea 
+                            v-model="form.details" 
+                            rows="2"
+                            placeholder="לדוגמה: מידות, בדיקת חיבור חשמל, תיאום שעת הגעה..."
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 text-sm"
+                        ></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">מחיר משוער (₪)</label>
+                            <input 
+                                v-model.number="form.cost" 
+                                type="number" 
+                                min="0" 
+                                placeholder="0"
+                                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 text-sm"
+                            >
+                        </div>
+
+                        <div class="flex items-center pt-2 sm:pt-6">
+                            <label class="inline-flex items-center gap-2 cursor-pointer">
+                                <input 
+                                    v-model="form.completed" 
+                                    type="checkbox" 
+                                    class="w-5 h-5 rounded border-slate-300 text-sky-600 focus:ring-sky-500 accent-sky-600"
+                                >
+                                <span class="text-sm font-bold text-slate-700">סימון כמשימה שבוצעה ✓</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">הערות נוספות</label>
+                        <input 
+                            v-model="form.notes" 
+                            type="text" 
+                            placeholder="דגשים מיוחדים, טלפון, תאריך יעד..."
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 text-sm"
+                        >
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                        <button 
+                            type="button" 
+                            @click="closeModal()" 
+                            class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-sm font-bold transition-colors"
+                        >
+                            ביטול
+                        </button>
+                        <button 
+                            type="submit" 
+                            class="px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-sm font-bold shadow-md transition-all"
+                        >
+                            {{ isEditing ? 'שמור שינויים' : 'הוסף לטבלה' }}
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+        <!-- CONFIRMATION DIALOG MODAL -->
+        <div 
+            v-if="confirmDialog.show" 
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print"
+            @click.self="cancelConfirm()"
+        >
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 space-y-4 border border-slate-100 text-center">
+                <div class="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-2xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">{{ confirmDialog.title }}</h3>
+                    <p class="text-sm text-slate-600 mt-1 leading-relaxed">{{ confirmDialog.message }}</p>
+                </div>
+                <div class="flex items-center justify-center gap-3 pt-2">
+                    <button 
+                        @click="cancelConfirm()" 
+                        class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-sm font-bold transition-colors flex-1"
+                    >
+                        ביטול
+                    </button>
+                    <button 
+                        @click="executeConfirm()" 
+                        class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-sm font-bold shadow-md transition-all flex-1"
+                    >
+                        אישור
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="bg-slate-900 text-slate-400 text-xs py-6 mt-12 no-print border-t border-slate-800">
+            <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
+                <p class="font-medium text-slate-300">נוצר באהבה עבור אבא ואמא ❤️ בהצלחה רבה במעבר הדירה!</p>
+                <p class="text-slate-500">הנתונים מסונכרנים אוטומטית בזמן אמת מול הענן בכל המכשירים הפתוחים.</p>
+            </div>
+        </footer>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, setDoc, updateDoc, deleteDoc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Initial default dataset matching all items from the table
+        const INITIAL_TASKS = [
+            { id: 'task_1', category: 'אריזה ומיון', title: 'מסמכים חשובים', details: 'לרכז בנפרד ולא להכניס להובלה רגילה אם אפשר', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_2', category: 'אריזה ומיון', title: 'מיון חפצים', details: 'להחליט מה עובר, נתרם, נזרק או נמכר', priority: 'בינונית', cost: 0, notes: '', completed: false },
+            
+            { id: 'task_3', category: 'הובלה', title: 'בחירת חברת הובלה', details: 'השוואת הצעות מחיר והמלצות/תיאום יום ושעה', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            
+            { id: 'task_4', category: 'חדרי רחצה', title: 'התאמה ונגישות', details: 'מוטות אחיזה, גובה שירותים, רוחב דלתות', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_5', category: 'חדרי רחצה', title: 'בידה', details: 'קנייה והתקנה', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_6', category: 'חדרי רחצה', title: 'אביזרי אמבטיה', details: 'מתקן סבון, מברשת, מגבות וכו\'', priority: 'בינונית', cost: 0, notes: '', completed: false },
+            
+            { id: 'task_7', category: 'מוצרי חשמל', title: 'מקרר', details: 'מידות נישה, דלתות, מעבר וחיבור מים אם קיים', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_8', category: 'מוצרי חשמל', title: 'תנור בילד אין', details: 'מידות וחיבור חשמל', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_9', category: 'מוצרי חשמל', title: 'ראוטר / ציוד תקשורת', details: 'בדיקת מיקום ותשתית', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_10', category: 'מוצרי חשמל', title: 'טלוויזיה גדולה לסלון/ מתקני תליה לחדרים?', details: 'מידות, מיקום ושקעי חשמל/תקשורת', priority: 'נמוכה', cost: 0, notes: '', completed: false },
+            
+            { id: 'task_11', category: 'מטבח', title: 'מתקן מי עדן', details: '?', priority: 'נמוכה', cost: 0, notes: '', completed: false },
+            { id: 'task_12', category: 'מטבח', title: 'קלפה/מדפים לתבלינים/קפה', details: 'מידות, מיקום', priority: 'בינונית', cost: 0, notes: '', completed: false },
+            { id: 'task_13', category: 'מטבח', title: 'אי במטבח', details: 'לקצר/לבטל?', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_14', category: 'מטבח', title: 'מקרר / מקפיא', details: 'ריקון, ניקוי והפשרה לפני המעבר', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            
+            { id: 'task_15', category: 'ניקיון ותחזוקה', title: 'צביעה/תיקוני קיר', details: 'צביעה מלאה בצבע לבן', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_16', category: 'ניקיון ותחזוקה', title: 'מתגים טאצ\' להחליף?', details: 'בדיקת שקעים ומתגים', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_17', category: 'ניקיון ותחזוקה', title: 'רשתות', details: 'הזמנת מתקן רשתות', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_18', category: 'ניקיון ותחזוקה', title: 'בדיקת תאורה', details: 'נורות וגופי תאורה - התקנה', priority: 'בינונית', cost: 0, notes: '', completed: false },
+            { id: 'task_19', category: 'ניקיון ותחזוקה', title: 'ניקיון יסודי לפני כניסה', details: 'רצפות, חלונות, ארונות, מטבח וחדרי רחצה', priority: 'נמוכה', cost: 0, notes: '', completed: false },
+            
+            { id: 'task_20', category: 'ריהוט', title: 'מדפים למחסן', details: 'לברר מידות ומחיר', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_21', category: 'ריהוט', title: 'מיטה זוגית', details: 'מידות, פירוק והרכבה', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_22', category: 'ריהוט', title: 'מזרן פולירון', details: 'בדיקת מידה והובלה', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_23', category: 'ריהוט', title: 'שולחן עבודה/מחשב ומדפסת', details: 'מידות, מיקום וחיבורי חשמל', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_24', category: 'ריהוט', title: 'ספריית קודש', details: 'בדיקת קיבולת ומידות', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_25', category: 'ריהוט', title: 'ספה', details: 'בדיקת התאמה למידות הסלון, דלתות', priority: 'בינונית', cost: 0, notes: '', completed: false },
+            { id: 'task_26', category: 'ריהוט', title: 'ארונות לחדרים', details: 'בדיקת מקום, פירוק והרכבה', priority: 'בינונית', cost: 0, notes: '', completed: false },
+            { id: 'task_27', category: 'ריהוט', title: 'שידות/ארגז נעליים', details: 'בדיקת מידות ומיקום', priority: 'בינונית', cost: 0, notes: '', completed: false },
+            { id: 'task_28', category: 'ריהוט', title: 'מיטות חדרים', details: 'בדיקת מידות ופירוק', priority: 'נמוכה', cost: 0, notes: '', completed: false },
+            { id: 'task_29', category: 'ריהוט', title: 'מוטות אחיזה לאבא', details: 'בדיקת כמות ומיקומים', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            
+            { id: 'task_30', category: 'תכנון ובירוקרטיה', title: 'עדכון כתובת', details: 'בנקים, ביטוחים, קופות, מוסדות, אתרים ושירותים', priority: 'נמוכה', cost: 0, notes: '', completed: false },
+            { id: 'task_31', category: 'תכנון ובירוקרטיה', title: 'דואר', details: 'בדיקת שינוי/העברת כתובת בדואר', priority: 'נמוכה', cost: 0, notes: '', completed: false },
+            { id: 'task_32', category: 'תכנון ובירוקרטיה', title: 'ארנונה/חשמל/מים/גז/אינטרנט/ביטוח דירה', details: 'עדכון מחזיק/כתובת מול הרשות המקומית', priority: 'נמוכה', cost: 0, notes: '', completed: false }
+        ];
+
+        // Setup Firebase
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mom-dad-moving-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "demo-api-key",
+                authDomain: "demo-app.firebaseapp.com",
+                projectId: "demo-app",
+                storageBucket: "demo-app.appspot.com",
+                messagingSenderId: "123456789",
+                appId: "1:123456789:web:demo"
+              };
+
+        const firebaseApp = initializeApp(firebaseConfig);
+        const auth = getAuth(firebaseApp);
+        const db = getFirestore(firebaseApp);
+
+        // Path for shared public tasks
+        const tasksCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
+
+        const { createApp } = Vue;
+
+        const vueApp = createApp({
+            data() {
+                return {
+                    tasks: [],
+                    connectionStatus: 'connecting',
+                    searchQuery: '',
+                    selectedCategory: 'ALL',
+                    selectedPriority: 'ALL',
+                    selectedStatus: 'ALL',
+                    sortBy: 'priority',
+                    viewMode: 'table',
+                    
+                    showModal: false,
+                    isEditing: false,
+                    editingId: null,
+                    form: {
+                        title: '',
+                        category: '',
+                        details: '',
+                        priority: 'בינונית',
+                        cost: 0,
+                        notes: '',
+                        completed: false
+                    },
+
+                    confirmDialog: {
+                        show: false,
+                        title: '',
+                        message: '',
+                        action: null
+                    }
+                }
+            },
+            mounted() {
+                if (window.innerWidth < 640) {
+                    this.viewMode = 'grouped';
+                }
+                this.initFirebaseSync();
+            },
+            computed: {
+                categories() {
+                    const set = new Set();
+                    this.tasks.forEach(t => {
+                        if (t.category) set.add(t.category);
+                    });
+                    return Array.from(set).sort();
+                },
+                filteredTasks() {
+                    return this.tasks.filter(t => {
+                        if (this.selectedCategory !== 'ALL' && t.category !== this.selectedCategory) {
+                            return false;
+                        }
+                        if (this.selectedPriority !== 'ALL' && t.priority !== this.selectedPriority) {
+                            return false;
+                        }
+                        if (this.selectedStatus === 'COMPLETED' && !t.completed) return false;
+                        if (this.selectedStatus === 'PENDING' && t.completed) return false;
+
+                        if (this.searchQuery.trim() !== '') {
+                            const query = this.searchQuery.toLowerCase();
+                            const matchTitle = (t.title || '').toLowerCase().includes(query);
+                            const matchDetails = (t.details || '').toLowerCase().includes(query);
+                            const matchCategory = (t.category || '').toLowerCase().includes(query);
+                            const matchNotes = (t.notes || '').toLowerCase().includes(query);
+                            return matchTitle || matchDetails || matchCategory || matchNotes;
+                        }
+
+                        return true;
+                    }).sort((a, b) => {
+                        if (this.sortBy === 'priority') {
+                            const pOrder = { 'גבוהה': 1, 'בינונית': 2, 'נמוכה': 3 };
+                            const weightA = pOrder[a.priority] || 4;
+                            const weightB = pOrder[b.priority] || 4;
+                            return weightA - weightB;
+                        } else if (this.sortBy === 'category') {
+                            return (a.category || '').localeCompare(b.category || '', 'he');
+                        } else if (this.sortBy === 'title') {
+                            return (a.title || '').localeCompare(b.title || '', 'he');
+                        } else if (this.sortBy === 'cost') {
+                            return (b.cost || 0) - (a.cost || 0);
+                        }
+                        return 0;
+                    });
+                },
+                groupedTasks() {
+                    const groups = {};
+                    this.filteredTasks.forEach(task => {
+                        const cat = task.category || 'ללא קטגוריה';
+                        if (!groups[cat]) groups[cat] = [];
+                        groups[cat].push(task);
+                    });
+                    return groups;
+                },
+                completedCount() {
+                    return this.tasks.filter(t => t.completed).length;
+                },
+                completionPercentage() {
+                    if (!this.tasks.length) return 0;
+                    return Math.round((this.completedCount / this.tasks.length) * 100);
+                },
+                highPriorityPendingCount() {
+                    return this.tasks.filter(t => t.priority === 'גבוהה' && !t.completed).length;
+                },
+                totalEstimatedCost() {
+                    return this.filteredTasks.reduce((sum, task) => sum + Number(task.cost || 0), 0);
+                }
+            },
+            methods: {
+                async initFirebaseSync() {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+
+                        onSnapshot(tasksCollectionRef, async (snapshot) => {
+                            if (snapshot.empty) {
+                                for (const item of INITIAL_TASKS) {
+                                    const taskDoc = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', item.id);
+                                    await setDoc(taskDoc, item);
+                                }
+                            } else {
+                                const remoteTasks = [];
+                                snapshot.forEach((docSnap) => {
+                                    remoteTasks.push({ ...docSnap.data(), id: docSnap.id });
+                                });
+                                this.tasks = remoteTasks;
+                                this.connectionStatus = 'connected';
+                            }
+                        }, (error) => {
+                            console.error("Firestore sync error:", error);
+                            this.connectionStatus = 'error';
+                        });
+
+                    } catch (err) {
+                        console.error("Initialization failed:", err);
+                        this.connectionStatus = 'error';
+                    }
+                },
+
+                async toggleTaskStatus(task) {
+                    const newStatus = !task.completed;
+                    task.completed = newStatus;
+                    try {
+                        const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', String(task.id));
+                        await updateDoc(taskRef, { completed: newStatus });
+                    } catch (e) {
+                        console.error("Failed to update status:", e);
+                    }
+                },
+
+                getCategoryTaskCount(categoryName) {
+                    return this.tasks.filter(t => t.category === categoryName).length;
+                },
+
+                getPriorityClass(priority) {
+                    switch (priority) {
+                        case 'גבוהה':
+                            return 'bg-rose-100 text-rose-700 border border-rose-200';
+                        case 'בינונית':
+                            return 'bg-amber-100 text-amber-800 border border-amber-200';
+                        case 'נמוכה':
+                            return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+                        default:
+                            return 'bg-slate-100 text-slate-600';
+                    }
+                },
+
+                setSort(type) {
+                    this.sortBy = type;
+                },
+
+                clearFilters() {
+                    this.searchQuery = '';
+                    this.selectedCategory = 'ALL';
+                    this.selectedPriority = 'ALL';
+                    this.selectedStatus = 'ALL';
+                },
+
+                openAddModal() {
+                    this.isEditing = false;
+                    this.editingId = null;
+                    this.form = {
+                        title: '',
+                        category: this.selectedCategory !== 'ALL' ? this.selectedCategory : '',
+                        details: '',
+                        priority: 'בינונית',
+                        cost: 0,
+                        notes: '',
+                        completed: false
+                    };
+                    this.showModal = true;
+                },
+
+                openEditModal(task) {
+                    this.isEditing = true;
+                    this.editingId = task.id;
+                    this.form = {
+                        title: task.title,
+                        category: task.category || '',
+                        details: task.details || '',
+                        priority: task.priority || 'בינונית',
+                        cost: task.cost || 0,
+                        notes: task.notes || '',
+                        completed: !!task.completed
+                    };
+                    this.showModal = true;
+                },
+
+                closeModal() {
+                    this.showModal = false;
+                },
+
+                async saveTask() {
+                    if (!this.form.title.trim()) return;
+
+                    if (this.isEditing) {
+                        const taskIdStr = String(this.editingId);
+                        const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskIdStr);
+                        const updatedData = {
+                            title: this.form.title.trim(),
+                            category: this.form.category.trim() || 'כללי',
+                            details: this.form.details.trim(),
+                            priority: this.form.priority,
+                            cost: Number(this.form.cost) || 0,
+                            notes: this.form.notes.trim(),
+                            completed: this.form.completed
+                        };
+                        
+                        await updateDoc(taskRef, updatedData);
+                    } else {
+                        const newDocId = 'task_' + Date.now();
+                        const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', newDocId);
+                        const newTaskData = {
+                            id: newDocId,
+                            title: this.form.title.trim(),
+                            category: this.form.category.trim() || 'כללי',
+                            details: this.form.details.trim(),
+                            priority: this.form.priority,
+                            cost: Number(this.form.cost) || 0,
+                            notes: this.form.notes.trim(),
+                            completed: this.form.completed
+                        };
+
+                        await setDoc(taskRef, newTaskData);
+                    }
+
+                    this.closeModal();
+                },
+
+                promptDeleteTask(task) {
+                    this.confirmDialog = {
+                        show: true,
+                        title: 'מחיקת משימה',
+                        message: `האם למחוק את המשימה "${task.title}"? השינוי יימשך לכל המשתמשים המחוברים.`,
+                        action: () => this.deleteTaskConfirmed(task.id)
+                    };
+                },
+
+                async deleteTaskConfirmed(id) {
+                    try {
+                        const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', String(id));
+                        await deleteDoc(taskRef);
+                    } catch (e) {
+                        console.error("Error deleting task:", e);
+                    }
+                },
+
+                promptResetData() {
+                    this.confirmDialog = {
+                        show: true,
+                        title: 'איפוס משימות',
+                        message: 'האם לאפס את כל המשימות ולהחזיר את רשימת המעבר المקורית? פעולה זו תעדכן את כל המכשירים המחוברים.',
+                        action: () => this.resetDataConfirmed()
+                    };
+                },
+
+                async resetDataConfirmed() {
+                    try {
+                        const currentDocs = await getDocs(tasksCollectionRef);
+                        for (const d of currentDocs.docs) {
+                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', d.id));
+                        }
+                        for (const item of INITIAL_TASKS) {
+                            const taskDoc = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', item.id);
+                            await setDoc(taskDoc, item);
+                        }
+                        this.clearFilters();
+                    } catch (e) {
+                        console.error("Error resetting data:", e);
+                    }
+                },
+
+                cancelConfirm() {
+                    this.confirmDialog.show = false;
+                },
+
+                executeConfirm() {
+                    if (this.confirmDialog.action) {
+                        this.confirmDialog.action();
+                    }
+                    this.confirmDialog.show = false;
+                },
+
+                printTasks() {
+                    window.print();
+                }
+            }
+        });
+
+        vueApp.mount('#app');
+    </script>
+</body>
+</html>
