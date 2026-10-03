@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ניהול מעבר דירה - המעבר של אבא ואמא</title>
+    <title>המעבר של אבא ואמא - ניהול משימות שיתופי בזמן אמת</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Vue.js 3 CDN for reactive state management -->
+    <!-- Vue.js 3 CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
     <script>
@@ -34,11 +34,6 @@
                             600: '#0284c7',
                             700: '#0369a1',
                             800: '#075985',
-                        },
-                        priority: {
-                            high: '#ef4444',
-                            medium: '#f59e0b',
-                            low: '#10b981'
                         }
                     }
                 }
@@ -47,12 +42,13 @@
     </script>
     
     <style>
+        [v-cloak] { display: none !important; }
+
         body {
             font-family: 'Heebo', sans-serif;
             background-color: #f8fafc;
         }
         
-        /* Custom scrollbar for table */
         .custom-scrollbar::-webkit-scrollbar {
             height: 8px;
             width: 8px;
@@ -69,57 +65,83 @@
             background: #94a3b8;
         }
 
-        /* Print styles optimization */
         @media print {
             .no-print {
                 display: none !important;
             }
             body {
                 background: white;
-                font-size: 12pt;
+                font-size: 11pt;
             }
             .print-shadow-none {
                 box-shadow: none !important;
-                border: 1px solid #e2e8f0;
+                border: 1px solid #cbd5e1;
             }
             .print-break-inside-avoid {
                 break-inside: avoid;
             }
         }
 
-        /* Vue transitions */
-        .fade-enter-active, .fade-leave-active {
-            transition: opacity 0.2s ease;
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
         }
-        .fade-enter-from, .fade-leave-to {
-            opacity: 0;
+        .pulse-indicator {
+            animation: pulse-ring 2s infinite ease-in-out;
         }
     </style>
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col antialiased selection:bg-sky-100 selection:text-sky-900">
 
-    <div id="app" class="flex-1 flex flex-col">
+    <div id="app" class="flex-1 flex flex-col" v-cloak>
         
         <!-- HEADER / NAVBAR -->
         <header class="bg-gradient-to-r from-sky-700 via-sky-600 to-indigo-700 text-white shadow-lg no-print sticky top-0 z-30">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    
                     <div class="flex items-center space-x-3 space-x-reverse">
-                        <div class="p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-inner">
-                            <i class="fa-solid fa-[#ffffff] fa-house-chimney-window text-2xl sm:text-3xl"></i>
+                        <div class="p-2.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-inner shrink-0">
+                            <i class="fa-solid fa-house-chimney-window text-2xl sm:text-3xl text-white"></i>
                         </div>
                         <div>
-                            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">המעבר של אבא ואמא 🏠</h1>
-                            <p class="text-sky-100 text-sm font-medium mt-0.5">רשימה מרוכזת, מעקב משימות, תקציב וארגון יעיל</p>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight">המעבר של אבא ואמא 🏠</h1>
+                                <span 
+                                    v-if="connectionStatus === 'connected'" 
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30"
+                                    title="מסונכרן בזמן אמת מול הענן"
+                                >
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-indicator"></span>
+                                    <span>סנכרון ענן פעיל</span>
+                                </span>
+                                <span 
+                                    v-else-if="connectionStatus === 'local'" 
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-500/20 text-sky-100 border border-sky-400/30"
+                                    title="שמירה מקומית בדפדפן"
+                                >
+                                    <i class="fa-solid fa-floppy-disk text-xs"></i>
+                                    <span>שמירה מקומית</span>
+                                </span>
+                                <span 
+                                    v-else-if="connectionStatus === 'connecting'" 
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-200 border border-amber-400/30"
+                                >
+                                    <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+                                    <span>מתחבר...</span>
+                                </span>
+                            </div>
+                            <p class="text-sky-100 text-xs sm:text-sm font-medium mt-0.5">ניהול משימות שיתופי, תקציב וארגון יעיל למעבר הדירה</p>
                         </div>
                     </div>
                     
                     <div class="flex items-center gap-2 flex-wrap">
                         <button 
                             @click="openAddModal()" 
-                            class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all duration-200 transform active:scale-95 text-base"
+                            class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl font-bold shadow-md transition-all duration-200 transform active:scale-95 text-sm sm:text-base"
                         >
-                            <i class="fa-solid fa-plus text-lg"></i>
+                            <i class="fa-solid fa-plus text-base"></i>
                             <span>הוסף משימה</span>
                         </button>
                         
@@ -132,13 +154,14 @@
                         </button>
 
                         <button 
-                            @click="confirmResetData()" 
+                            @click="promptResetData()" 
                             title="איפוס לנתונים המקוריים" 
                             class="p-2.5 bg-white/10 hover:bg-rose-500/80 rounded-xl transition-colors border border-white/20 text-white"
                         >
                             <i class="fa-solid fa-rotate-right text-lg"></i>
                         </button>
                     </div>
+
                 </div>
             </div>
         </header>
@@ -148,50 +171,46 @@
 
             <!-- DASHBOARD STATS CARDS -->
             <section class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 no-print">
-                <!-- Card 1: Total Tasks -->
                 <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between">
                     <div>
                         <p class="text-xs sm:text-sm font-semibold text-slate-500">סה"כ משימות</p>
                         <p class="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-1">{{ filteredTasks.length }}</p>
                         <span class="text-xs text-slate-400">מתוך {{ tasks.length }} קיימות</span>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center text-xl">
+                    <div class="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center text-xl shrink-0">
                         <i class="fa-solid fa-list-check"></i>
                     </div>
                 </div>
 
-                <!-- Card 2: Completed Tasks -->
                 <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between">
                     <div>
                         <p class="text-xs sm:text-sm font-semibold text-slate-500">בוצעו בהצלחה</p>
                         <p class="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-1">{{ completedCount }}</p>
                         <span class="text-xs text-emerald-600 font-semibold">{{ completionPercentage }}% הושלמו</span>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0">
                         <i class="fa-solid fa-circle-check"></i>
                     </div>
                 </div>
 
-                <!-- Card 3: High Priority -->
                 <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between">
                     <div>
                         <p class="text-xs sm:text-sm font-semibold text-slate-500">עדיפות גבוהה</p>
                         <p class="text-2xl sm:text-3xl font-extrabold text-rose-600 mt-1">{{ highPriorityPendingCount }}</p>
                         <span class="text-xs text-rose-500 font-medium">המשימות הדחופות</span>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl">
+                    <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl shrink-0">
                         <i class="fa-solid fa-triangle-exclamation"></i>
                     </div>
                 </div>
 
-                <!-- Card 4: Total Estimated Budget -->
                 <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between">
                     <div>
                         <p class="text-xs sm:text-sm font-semibold text-slate-500">מחיר משוער כולל</p>
                         <p class="text-2xl sm:text-3xl font-extrabold text-indigo-700 mt-1">₪{{ totalEstimatedCost.toLocaleString() }}</p>
-                        <span class="text-xs text-slate-400">עבור התוצאות המסומנות</span>
+                        <span class="text-xs text-slate-400">עבור התוצאות המוצגות</span>
                     </div>
-                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shrink-0">
                         <i class="fa-solid fa-shekel-sign"></i>
                     </div>
                 </div>
@@ -202,7 +221,7 @@
                 <div class="flex justify-between items-center mb-2">
                     <span class="text-sm font-bold text-slate-700 flex items-center gap-2">
                         <i class="fa-solid fa-bars-progress text-sky-600"></i>
-                        התקדמות הכללית במעבר הדירה
+                        התקדמות כללית במעבר הדירה
                     </span>
                     <span class="text-sm font-extrabold text-sky-600">{{ completionPercentage }}%</span>
                 </div>
@@ -218,7 +237,6 @@
             <section class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80 space-y-4 no-print">
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
                     
-                    <!-- Search Input -->
                     <div class="md:col-span-4 relative">
                         <label class="block text-xs font-bold text-slate-500 mb-1">חיפוש חופשי</label>
                         <div class="relative">
@@ -239,7 +257,6 @@
                         </div>
                     </div>
 
-                    <!-- Category Filter -->
                     <div class="md:col-span-3">
                         <label class="block text-xs font-bold text-slate-500 mb-1">סינון לפי קטגוריה</label>
                         <select 
@@ -253,7 +270,6 @@
                         </select>
                     </div>
 
-                    <!-- Priority Filter -->
                     <div class="md:col-span-3">
                         <label class="block text-xs font-bold text-slate-500 mb-1">סינון לפי עדיפות</label>
                         <select 
@@ -267,7 +283,6 @@
                         </select>
                     </div>
 
-                    <!-- Status Filter -->
                     <div class="md:col-span-2">
                         <label class="block text-xs font-bold text-slate-500 mb-1">סטאטוס ביצוע</label>
                         <select 
@@ -282,10 +297,9 @@
 
                 </div>
 
-                <!-- Quick Tags & Sort Controls -->
                 <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 text-xs sm:text-sm">
                     <div class="flex items-center gap-2 flex-wrap">
-                        <span class="font-bold text-slate-400">מיוון לפי:</span>
+                        <span class="font-bold text-slate-400">מיון לפי:</span>
                         <button 
                             @click="setSort('priority')" 
                             :class="sortBy === 'priority' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
@@ -320,7 +334,6 @@
                         </button>
                     </div>
 
-                    <!-- View Switcher -->
                     <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
                         <button 
                             @click="viewMode = 'table'" 
@@ -364,10 +377,9 @@
                             <tr 
                                 v-for="task in filteredTasks" 
                                 :key="task.id"
-                                :class="{ 'bg-emerald-50/60 text-slate-500 line-through-container': task.completed, 'hover:bg-slate-50/80': !task.completed }"
+                                :class="{ 'bg-emerald-50/60 text-slate-500': task.completed, 'hover:bg-slate-50/80': !task.completed }"
                                 class="transition-colors group"
                             >
-                                <!-- Checkbox Status -->
                                 <td class="p-3.5 text-center no-print">
                                     <input 
                                         type="checkbox" 
@@ -377,24 +389,20 @@
                                     >
                                 </td>
 
-                                <!-- Category -->
                                 <td class="p-3.5 font-semibold text-slate-700">
                                     <span class="inline-block px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold">
                                         {{ task.category || '-' }}
                                     </span>
                                 </td>
 
-                                <!-- Task Name / Item -->
                                 <td class="p-3.5 font-bold text-slate-900" :class="{ 'line-through text-slate-400': task.completed }">
                                     {{ task.title }}
                                 </td>
 
-                                <!-- Details / What to check -->
                                 <td class="p-3.5 text-slate-600 leading-relaxed" :class="{ 'line-through text-slate-400': task.completed }">
                                     {{ task.details || '-' }}
                                 </td>
 
-                                <!-- Priority Badge -->
                                 <td class="p-3.5 text-center whitespace-nowrap">
                                     <span 
                                         class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-extrabold"
@@ -405,18 +413,15 @@
                                     </span>
                                 </td>
 
-                                <!-- Price -->
                                 <td class="p-3.5 text-center font-bold text-slate-800">
                                     <span v-if="task.cost > 0" class="text-indigo-700">₪{{ Number(task.cost).toLocaleString() }}</span>
                                     <span v-else class="text-slate-300 font-normal">-</span>
                                 </td>
 
-                                <!-- Notes -->
                                 <td class="p-3.5 text-slate-500 text-xs leading-relaxed italic">
                                     {{ task.notes || '-' }}
                                 </td>
 
-                                <!-- Actions (Edit/Delete) -->
                                 <td class="p-3.5 text-center no-print">
                                     <div class="flex items-center justify-center gap-1 opacity-80 group-hover:opacity-100">
                                         <button 
@@ -427,7 +432,7 @@
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </button>
                                         <button 
-                                            @click="deleteTask(task.id)" 
+                                            @click="promptDeleteTask(task)" 
                                             title="מחיקה" 
                                             class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                                         >
@@ -437,7 +442,6 @@
                                 </td>
                             </tr>
 
-                            <!-- Empty State -->
                             <tr v-if="filteredTasks.length === 0">
                                 <td colspan="8" class="p-12 text-center text-slate-400">
                                     <div class="flex flex-col items-center justify-center gap-3">
@@ -457,7 +461,7 @@
                 </div>
             </section>
 
-            <!-- VIEW MODE 2: GROUPED BY CATEGORY -->
+            <!-- VIEW MODE 2: GROUPED BY CATEGORY (MOBILE FRIENDLY) -->
             <section v-if="viewMode === 'grouped'" class="space-y-6">
                 <div 
                     v-for="(groupTasks, catName) in groupedTasks" 
@@ -521,13 +525,13 @@
                                 <span v-if="task.cost > 0" class="font-bold text-indigo-700">
                                     ₪{{ Number(task.cost).toLocaleString() }}
                                 </span>
-                                <span v-else class="text-slate-400">ללא עלות תאורטית</span>
+                                <span v-else class="text-slate-400">ללא עלות משוערת</span>
 
                                 <div class="flex items-center gap-1 no-print">
-                                    <button @click="openEditModal(task)" class="p-1 text-slate-400 hover:text-sky-600">
+                                    <button @click="openEditModal(task)" class="p-1.5 text-slate-400 hover:text-sky-600 rounded">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                    <button @click="deleteTask(task.id)" class="p-1 text-slate-400 hover:text-rose-600">
+                                    <button @click="promptDeleteTask(task)" class="p-1.5 text-slate-400 hover:text-rose-600 rounded">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </button>
                                 </div>
@@ -555,6 +559,11 @@
             @click.self="closeModal()"
         >
             <div class="bg-white rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 transform transition-all my-8">
+                <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid text-sky-400 text-lg" :class="isEditing ? 'fa-pen-to-square' : 'fa-circle-plus'"></i>
+                        <h3 class="text-lg font-bold">
+                            {{ isEditing ? 'עריכת משימה' : 'הוספת משימה חדשה למעבר' }}
                         </h3>
                     </div>
                     <button @click="closeModal()" class="text-slate-400 hover:text-white p-1 text-xl">
@@ -562,10 +571,7 @@
                     </button>
                 </div>
 
-                <!-- Modal Body / Form -->
                 <form @submit.prevent="saveTask()" class="p-6 space-y-4">
-                    
-                    <!-- Task Title -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">
                             משימה / פריט <span class="text-rose-500">*</span>
@@ -579,7 +585,6 @@
                         >
                     </div>
 
-                    <!-- Category -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">קטגוריה</label>
@@ -594,7 +599,6 @@
                             </datalist>
                         </div>
 
-                        <!-- Priority -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">עדיפות</label>
                             <select 
@@ -608,7 +612,6 @@
                         </div>
                     </div>
 
-                    <!-- Details / What to check -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">פירוט / מה לבדוק</label>
                         <textarea 
@@ -620,7 +623,6 @@
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <!-- Estimated Cost -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">מחיר משוער (₪)</label>
                             <input 
@@ -632,8 +634,7 @@
                             >
                         </div>
 
-                        <!-- Status Option -->
-                        <div class="flex items-center pt-6">
+                        <div class="flex items-center pt-2 sm:pt-6">
                             <label class="inline-flex items-center gap-2 cursor-pointer">
                                 <input 
                                     v-model="form.completed" 
@@ -645,7 +646,6 @@
                         </div>
                     </div>
 
-                    <!-- Notes -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">הערות נוספות</label>
                         <input 
@@ -656,7 +656,6 @@
                         >
                     </div>
 
-                    <!-- Modal Actions -->
                     <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                         <button 
                             type="button" 
@@ -677,74 +676,129 @@
             </div>
         </div>
 
+        <!-- CONFIRMATION DIALOG MODAL -->
+        <div 
+            v-if="confirmDialog.show" 
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print"
+            @click.self="cancelConfirm()"
+        >
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 space-y-4 border border-slate-100 text-center">
+                <div class="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-2xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">{{ confirmDialog.title }}</h3>
+                    <p class="text-sm text-slate-600 mt-1 leading-relaxed">{{ confirmDialog.message }}</p>
+                </div>
+                <div class="flex items-center justify-center gap-3 pt-2">
+                    <button 
+                        @click="cancelConfirm()" 
+                        class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-sm font-bold transition-colors flex-1"
+                    >
+                        ביטול
+                    </button>
+                    <button 
+                        @click="executeConfirm()" 
+                        class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-sm font-bold shadow-md transition-all flex-1"
+                    >
+                        אישור
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- FOOTER -->
         <footer class="bg-slate-900 text-slate-400 text-xs py-6 mt-12 no-print border-t border-slate-800">
             <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
                 <p class="font-medium text-slate-300">נוצר באהבה עבור אבא ואמא ❤️ בהצלחה רבה במעבר הדירה!</p>
-                <p class="text-slate-500">כל הנתונים נשמרים באופן אוטומטי בדפדפן הנייד או המחשב שלך.</p>
+                <p class="text-slate-500">הנתונים נשמרים ומסונכרנים אוטומטית.</p>
             </div>
         </footer>
 
     </div>
 
-    <script>
-        // INITIAL DEFAULT DATA extracted directly from the provided table image
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, setDoc, updateDoc, deleteDoc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Initial default dataset matching all items from the table
         const INITIAL_TASKS = [
-            { id: 1, category: 'אריזה ומיון', title: 'מסמכים חשובים', details: 'לרכז בנפרד ולא להכניס להובלה רגילה אם אפשר', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 2, category: 'אריזה ומיון', title: 'מיון חפצים', details: 'להחליט מה עובר, נתרם, נזרק או נמכר', priority: 'בינונית', cost: 0, notes: '', completed: false },
+            { id: 'task_1', category: 'אריזה ומיון', title: 'מסמכים חשובים', details: 'לרכז בנפרד ולא להכניס להובלה רגילה אם אפשר', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_2', category: 'אריזה ומיון', title: 'מיון חפצים', details: 'להחליט מה עובר, נתרם, נזרק או נמכר', priority: 'בינונית', cost: 0, notes: '', completed: false },
             
-            { id: 3, category: 'הובלה', title: 'בחירת חברת הובלה', details: 'השוואת הצעות מחיר והמלצות/תיאום יום ושעה', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_3', category: 'הובלה', title: 'בחירת חברת הובלה', details: 'השוואת הצעות מחיר והמלצות/תיאום יום ושעה', priority: 'גבוהה', cost: 0, notes: '', completed: false },
             
-            { id: 4, category: 'חדרי רחצה', title: 'התאמה ונגישות', details: 'מוטות אחיזה, גובה שירותים, רוחב דלתות', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 5, category: 'חדרי רחצה', title: 'בידה', details: 'קנייה והתקנה', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 6, category: 'חדרי רחצה', title: 'אביזרי אמבטיה', details: 'מתקן סבון, מברשת, מגבות וכו\'', priority: 'בינונית', cost: 0, notes: '', completed: false },
+            { id: 'task_4', category: 'חדרי רחצה', title: 'התאמה ונגישות', details: 'מוטות אחיזה, גובה שירותים, רוחב דלתות', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_5', category: 'חדרי רחצה', title: 'בידה', details: 'קנייה והתקנה', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_6', category: 'חדרי רחצה', title: 'אביזרי אמבטיה', details: 'מתקן סבון, מברשת, מגבות וכו\'', priority: 'בינונית', cost: 0, notes: '', completed: false },
             
-            { id: 7, category: 'מוצרי חשמל', title: 'מקרר', details: 'מידות נישה, דלתות, מעבר וחיבור מים אם קיים', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 8, category: 'מוצרי חשמל', title: 'תנור בילד אין', details: 'מידות וחיבור חשמל', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 9, category: 'מוצרי חשמל', title: 'ראוטר / ציוד תקשורת', details: 'בדיקת מיקום ותשתית', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 10, category: 'מוצרי חשמל', title: 'טלוויזיה גדולה לסלון/ מתקני תליה לחדרים?', details: 'מידות, מיקום ושקעי חשמל/תקשורת', priority: 'נמוכה', cost: 0, notes: '', completed: false },
+            { id: 'task_7', category: 'מוצרי חשמל', title: 'מקרר', details: 'מידות נישה, דלתות, מעבר וחיבור מים אם קיים', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_8', category: 'מוצרי חשמל', title: 'תנור בילד אין', details: 'מידות וחיבור חשמל', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_9', category: 'מוצרי חשמל', title: 'ראוטר / ציוד תקשורת', details: 'בדיקת מיקום ותשתית', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_10', category: 'מוצרי חשמל', title: 'טלוויזיה גדולה לסלון/ מתקני תליה לחדרים?', details: 'מידות, מיקום ושקעי חשמל/תקשורת', priority: 'נמוכה', cost: 0, notes: '', completed: false },
             
-            { id: 11, category: 'מטבח', title: 'מתקן מי עדן', details: '?', priority: 'נמוכה', cost: 0, notes: '', completed: false },
-            { id: 12, category: 'מטבח', title: 'קלפה/מדפים לתבלינים/קפה', details: 'מידות, מיקום', priority: 'בינונית', cost: 0, notes: '', completed: false },
-            { id: 13, category: 'מטבח', title: 'אי במטבח', details: 'לקצר/לבטל?', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 14, category: 'מטבח', title: 'מקרר / מקפיא', details: 'ריקון, ניקוי והפשרה לפני המעבר', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_11', category: 'מטבח', title: 'מתקן מי עדן', details: '?', priority: 'נמוכה', cost: 0, notes: '', completed: false },
+            { id: 'task_12', category: 'מטבח', title: 'קלפה/מדפים לתבלינים/קפה', details: 'מידות, מיקום', priority: 'בינונית', cost: 0, notes: '', completed: false },
+            { id: 'task_13', category: 'מטבח', title: 'אי במטבח', details: 'לקצר/לבטל?', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_14', category: 'מטבח', title: 'מקרר / מקפיא', details: 'ריקון, ניקוי והפשרה לפני המעבר', priority: 'גבוהה', cost: 0, notes: '', completed: false },
             
-            { id: 15, category: 'ניקיון ותחזוקה', title: 'צביעה/תיקוני קיר', details: 'צביעה מלאה בצבע לבן', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 16, category: 'ניקיון ותחזוקה', title: 'מתגים טאצ\' להחליף?', details: 'בדיקת שקעים ומתגים', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 17, category: 'ניקיון ותחזוקה', title: 'רשתות', details: 'הזמנת מתקן רשתות', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 18, category: 'ניקיון ותחזוקה', title: 'בדיקת תאורה', details: 'נורות וגופי תאורה - התקנה', priority: 'בינונית', cost: 0, notes: '', completed: false },
-            { id: 19, category: 'ניקיון ותחזוקה', title: 'ניקיון יסודי לפני כניסה', details: 'רצפות, חלונות, ארונות, מטבח וחדרי רחצה', priority: 'נמוכה', cost: 0, notes: '', completed: false },
+            { id: 'task_15', category: 'ניקיון ותחזוקה', title: 'צביעה/תיקוני קיר', details: 'צביעה מלאה בצבע לבן', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_16', category: 'ניקיון ותחזוקה', title: 'מתגים טאצ\' להחליף?', details: 'בדיקת שקעים ומתגים', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_17', category: 'ניקיון ותחזוקה', title: 'רשתות', details: 'הזמנת מתקן רשתות', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_18', category: 'ניקיון ותחזוקה', title: 'בדיקת תאורה', details: 'נורות וגופי תאורה - התקנה', priority: 'בינונית', cost: 0, notes: '', completed: false },
+            { id: 'task_19', category: 'ניקיון ותחזוקה', title: 'ניקיון יסודי לפני כניסה', details: 'רצפות, חלונות, ארונות, מטבח וחדרי רחצה', priority: 'נמוכה', cost: 0, notes: '', completed: false },
             
-            { id: 20, category: 'ריהוט', title: 'מדפים למחסן', details: 'לברר מידות ומחיר', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 21, category: 'ריהוט', title: 'מיטה זוגית', details: 'מידות, פירוק והרכבה', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 22, category: 'ריהוט', title: 'מזרן פולירון', details: 'בדיקת מידה והובלה', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 23, category: 'ריהוט', title: 'שולחן עבודה/מחשב ומדפסת', details: 'מידות, מיקום וחיבורי חשמל', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 24, category: 'ריהוט', title: 'ספריית קודש', details: 'בדיקת קיבולת ומידות', priority: 'גבוהה', cost: 0, notes: '', completed: false },
-            { id: 25, category: 'ריהוט', title: 'ספה', details: 'בדיקת התאמה למידות הסלון, דלתות', priority: 'בינונית', cost: 0, notes: '', completed: false },
-            { id: 26, category: 'ריהוט', title: 'ארונות לחדרים', details: 'בדיקת מקום, פירוק והרכבה', priority: 'בינונית', cost: 0, notes: '', completed: false },
-            { id: 27, category: 'ריהוט', title: 'שידות/ארגז נעליים', details: 'בדיקת מידות ומיקום', priority: 'בינונית', cost: 0, notes: '', completed: false },
-            { id: 28, category: 'ריהוט', title: 'מיטות חדרים', details: 'בדיקת מידות ופירוק', priority: 'נמוכה', cost: 0, notes: '', completed: false },
-            { id: 29, category: 'ריהוט', title: 'מוטות אחיזה לאבא', details: 'בדיקת כמות ומיקומים', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_20', category: 'ריהוט', title: 'מדפים למחסן', details: 'לברר מידות ומחיר', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_21', category: 'ריהוט', title: 'מיטה זוגית', details: 'מידות, פירוק והרכבה', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_22', category: 'ריהוט', title: 'מזרן פולירון', details: 'בדיקת מידה והובלה', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_23', category: 'ריהוט', title: 'שולחן עבודה/מחשב ומדפסת', details: 'מידות, מיקום וחיבורי חשמל', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_24', category: 'ריהוט', title: 'ספריית קודש', details: 'בדיקת קיבולת ומידות', priority: 'גבוהה', cost: 0, notes: '', completed: false },
+            { id: 'task_25', category: 'ריהוט', title: 'ספה', details: 'בדיקת התאמה למידות הסלון, דלתות', priority: 'בינונית', cost: 0, notes: '', completed: false },
+            { id: 'task_26', category: 'ריהוט', title: 'ארונות לחדרים', details: 'בדיקת מקום, פירוק והרכבה', priority: 'בינונית', cost: 0, notes: '', completed: false },
+            { id: 'task_27', category: 'ריהוט', title: 'שידות/ארגז נעליים', details: 'בדיקת מידות ומיקום', priority: 'בינונית', cost: 0, notes: '', completed: false },
+            { id: 'task_28', category: 'ריהוט', title: 'מיטות חדרים', details: 'בדיקת מידות ופירוק', priority: 'נמוכה', cost: 0, notes: '', completed: false },
+            { id: 'task_29', category: 'ריהוט', title: 'מוטות אחיזה לאבא', details: 'בדיקת כמות ומיקומים', priority: 'גבוהה', cost: 0, notes: '', completed: false },
             
-            { id: 30, category: 'תכנון ובירוקרטיה', title: 'עדכון כתובת', details: 'בנקים, ביטוחים, קופות, מוסדות, אתרים ושירותים', priority: 'נמוכה', cost: 0, notes: '', completed: false },
-            { id: 31, category: 'תכנון ובירוקרטיה', title: 'דואר', details: 'בדיקת שינוי/העברת כתובת בדואר', priority: 'נמוכה', cost: 0, notes: '', completed: false },
-            { id: 32, category: 'תכנון ובירוקרטיה', title: 'ארנונה/חשמל/מים/גז/אינטרנט/ביטוח דירה', details: 'עדכון מחזיק/כתובת מול הרשות המקומית', priority: 'נמוכה', cost: 0, notes: '', completed: false }
+            { id: 'task_30', category: 'תכנון ובירוקרטיה', title: 'עדכון כתובת', details: 'בנקים, ביטוחים, קופות, מוסדות, אתרים ושירותים', priority: 'נמוכה', cost: 0, notes: '', completed: false },
+            { id: 'task_31', category: 'תכנון ובירוקרטיה', title: 'דואר', details: 'בדיקת שינוי/העברת כתובת בדואר', priority: 'נמוכה', cost: 0, notes: '', completed: false },
+            { id: 'task_32', category: 'תכנון ובירוקרטיה', title: 'ארנונה/חשמל/מים/גז/אינטרנט/ביטוח דירה', details: 'עדכון מחזיק/כתובת מול הרשות המקומית', priority: 'נמוכה', cost: 0, notes: '', completed: false }
         ];
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mom-dad-moving-app';
+        const hasFirebaseConfig = typeof __firebase_config !== 'undefined';
+        
+        let db = null;
+        let auth = null;
+        let tasksCollectionRef = null;
+
+        if (hasFirebaseConfig) {
+            try {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const firebaseApp = initializeApp(firebaseConfig);
+                auth = getAuth(firebaseApp);
+                db = getFirestore(firebaseApp);
+                tasksCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
+            } catch (err) {
+                console.warn("Firebase config parse failed:", err);
+            }
+        }
 
         const { createApp } = Vue;
 
-        createApp({
+        const vueApp = createApp({
             data() {
                 return {
                     tasks: [],
+                    connectionStatus: 'connecting',
+                    isFirebaseActive: false,
                     searchQuery: '',
                     selectedCategory: 'ALL',
                     selectedPriority: 'ALL',
                     selectedStatus: 'ALL',
                     sortBy: 'priority',
-                    viewMode: 'table', // 'table' or 'grouped'
+                    viewMode: 'table',
                     
-                    // Modal state
                     showModal: false,
                     isEditing: false,
                     editingId: null,
@@ -756,33 +810,21 @@
                         cost: 0,
                         notes: '',
                         completed: false
+                    },
+
+                    confirmDialog: {
+                        show: false,
+                        title: '',
+                        message: '',
+                        action: null
                     }
                 }
             },
             mounted() {
-                // Load tasks from LocalStorage or initialize with default dataset
-                const saved = localStorage.getItem('mom_moving_tasks_v1');
-                if (saved) {
-                    try {
-                        this.tasks = JSON.parse(saved);
-                    } catch(e) {
-                        this.tasks = [...INITIAL_TASKS];
-                    }
-                } else {
-                    this.tasks = [...INITIAL_TASKS];
-                }
-
                 if (window.innerWidth < 640) {
                     this.viewMode = 'grouped';
                 }
-            },
-            watch: {
-                tasks: {
-                    handler(newVal) {
-                        localStorage.setItem('mom_moving_tasks_v1', JSON.stringify(newVal));
-                    },
-                    deep: true
-                }
+                this.initDataSync();
             },
             computed: {
                 categories() {
@@ -794,19 +836,15 @@
                 },
                 filteredTasks() {
                     return this.tasks.filter(t => {
-                        // Category filter
                         if (this.selectedCategory !== 'ALL' && t.category !== this.selectedCategory) {
                             return false;
                         }
-                        // Priority filter
                         if (this.selectedPriority !== 'ALL' && t.priority !== this.selectedPriority) {
                             return false;
                         }
-                        // Status filter
                         if (this.selectedStatus === 'COMPLETED' && !t.completed) return false;
                         if (this.selectedStatus === 'PENDING' && t.completed) return false;
 
-                        // Free text search
                         if (this.searchQuery.trim() !== '') {
                             const query = this.searchQuery.toLowerCase();
                             const matchTitle = (t.title || '').toLowerCase().includes(query);
@@ -857,12 +895,85 @@
                 }
             },
             methods: {
-                toggleTaskStatus(task) {
-                    task.completed = !task.completed;
+                async initDataSync() {
+                    if (db && tasksCollectionRef) {
+                        try {
+                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                await signInWithCustomToken(auth, __initial_auth_token);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+
+                            onSnapshot(tasksCollectionRef, async (snapshot) => {
+                                if (snapshot.empty) {
+                                    for (const item of INITIAL_TASKS) {
+                                        const taskDoc = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', item.id);
+                                        await setDoc(taskDoc, item);
+                                    }
+                                } else {
+                                    const remoteTasks = [];
+                                    snapshot.forEach((docSnap) => {
+                                        remoteTasks.push({ ...docSnap.data(), id: docSnap.id });
+                                    });
+                                    this.tasks = remoteTasks;
+                                    this.connectionStatus = 'connected';
+                                    this.isFirebaseActive = true;
+                                }
+                            }, (error) => {
+                                console.warn("Firestore listener failed, falling back to LocalStorage:", error);
+                                this.useLocalStorageFallback();
+                            });
+
+                        } catch (err) {
+                            console.warn("Firebase Auth failed, falling back to LocalStorage:", err);
+                            this.useLocalStorageFallback();
+                        }
+                    } else {
+                        this.useLocalStorageFallback();
+                    }
                 },
+
+                useLocalStorageFallback() {
+                    this.isFirebaseActive = false;
+                    this.connectionStatus = 'local';
+                    const stored = localStorage.getItem('mom_dad_tasks_data');
+                    if (stored) {
+                        try {
+                            this.tasks = JSON.parse(stored);
+                        } catch (e) {
+                            this.tasks = [...INITIAL_TASKS];
+                            this.saveToLocalStorage();
+                        }
+                    } else {
+                        this.tasks = [...INITIAL_TASKS];
+                        this.saveToLocalStorage();
+                    }
+                },
+
+                saveToLocalStorage() {
+                    localStorage.setItem('mom_dad_tasks_data', JSON.stringify(this.tasks));
+                },
+
+                async toggleTaskStatus(task) {
+                    const newStatus = !task.completed;
+                    task.completed = newStatus;
+
+                    if (this.isFirebaseActive) {
+                        try {
+                            const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', String(task.id));
+                            await updateDoc(taskRef, { completed: newStatus });
+                        } catch (e) {
+                            console.error("Failed to update Firestore status:", e);
+                        }
+                    } else {
+                        this.saveToLocalStorage();
+                    }
+                },
+
                 getCategoryTaskCount(categoryName) {
                     return this.tasks.filter(t => t.category === categoryName).length;
                 },
+
                 getPriorityClass(priority) {
                     switch (priority) {
                         case 'גבוהה':
@@ -875,15 +986,18 @@
                             return 'bg-slate-100 text-slate-600';
                     }
                 },
+
                 setSort(type) {
                     this.sortBy = type;
                 },
+
                 clearFilters() {
                     this.searchQuery = '';
                     this.selectedCategory = 'ALL';
                     this.selectedPriority = 'ALL';
                     this.selectedStatus = 'ALL';
                 },
+
                 openAddModal() {
                     this.isEditing = false;
                     this.editingId = null;
@@ -898,6 +1012,7 @@
                     };
                     this.showModal = true;
                 },
+
                 openEditModal(task) {
                     this.isEditing = true;
                     this.editingId = task.id;
@@ -912,30 +1027,16 @@
                     };
                     this.showModal = true;
                 },
+
                 closeModal() {
                     this.showModal = false;
                 },
-                saveTask() {
+
+                async saveTask() {
                     if (!this.form.title.trim()) return;
 
                     if (this.isEditing) {
-                        const index = this.tasks.findIndex(t => t.id === this.editingId);
-                        if (index !== -1) {
-                            this.tasks[index] = {
-                                ...this.tasks[index],
-                                title: this.form.title.trim(),
-                                category: this.form.category.trim(),
-                                details: this.form.details.trim(),
-                                priority: this.form.priority,
-                                cost: Number(this.form.cost) || 0,
-                                notes: this.form.notes.trim(),
-                                completed: this.form.completed
-                            };
-                        }
-                    } else {
-                        const newId = this.tasks.length ? Math.max(...this.tasks.map(t => t.id)) + 1 : 1;
-                        this.tasks.unshift({
-                            id: newId,
+                        const updatedData = {
                             title: this.form.title.trim(),
                             category: this.form.category.trim() || 'כללי',
                             details: this.form.details.trim(),
@@ -943,27 +1044,115 @@
                             cost: Number(this.form.cost) || 0,
                             notes: this.form.notes.trim(),
                             completed: this.form.completed
-                        });
+                        };
+
+                        if (this.isFirebaseActive) {
+                            const taskIdStr = String(this.editingId);
+                            const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskIdStr);
+                            await updateDoc(taskRef, updatedData);
+                        } else {
+                            const idx = this.tasks.findIndex(t => t.id === this.editingId);
+                            if (idx !== -1) {
+                                this.tasks[idx] = { ...this.tasks[idx], ...updatedData };
+                                this.saveToLocalStorage();
+                            }
+                        }
+                    } else {
+                        const newDocId = 'task_' + Date.now();
+                        const newTaskData = {
+                            id: newDocId,
+                            title: this.form.title.trim(),
+                            category: this.form.category.trim() || 'כללי',
+                            details: this.form.details.trim(),
+                            priority: this.form.priority,
+                            cost: Number(this.form.cost) || 0,
+                            notes: this.form.notes.trim(),
+                            completed: this.form.completed
+                        };
+
+                        if (this.isFirebaseActive) {
+                            const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', newDocId);
+                            await setDoc(taskRef, newTaskData);
+                        } else {
+                            this.tasks.push(newTaskData);
+                            this.saveToLocalStorage();
+                        }
                     }
 
                     this.closeModal();
                 },
-                deleteTask(id) {
-                    if (window.confirm('האם למחוק את המשימה הזו?')) {
+
+                promptDeleteTask(task) {
+                    this.confirmDialog = {
+                        show: true,
+                        title: 'מחיקת משימה',
+                        message: `האם למחוק את המשימה "${task.title}"?`,
+                        action: () => this.deleteTaskConfirmed(task.id)
+                    };
+                },
+
+                async deleteTaskConfirmed(id) {
+                    if (this.isFirebaseActive) {
+                        try {
+                            const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', String(id));
+                            await deleteDoc(taskRef);
+                        } catch (e) {
+                            console.error("Error deleting task:", e);
+                        }
+                    } else {
                         this.tasks = this.tasks.filter(t => t.id !== id);
+                        this.saveToLocalStorage();
                     }
                 },
-                confirmResetData() {
-                    if (window.confirm('האם לאפס את הטבלה ולהחזיר את כל המשימות המקוריות מהטבלה?')) {
+
+                promptResetData() {
+                    this.confirmDialog = {
+                        show: true,
+                        title: 'איפוס משימות',
+                        message: 'האם לאפס את כל המשימות ולהחזיר את רשימת המעבר המקורית?',
+                        action: () => this.resetDataConfirmed()
+                    };
+                },
+
+                async resetDataConfirmed() {
+                    if (this.isFirebaseActive) {
+                        try {
+                            const currentDocs = await getDocs(tasksCollectionRef);
+                            for (const d of currentDocs.docs) {
+                                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', d.id));
+                            }
+                            for (const item of INITIAL_TASKS) {
+                                const taskDoc = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', item.id);
+                                await setDoc(taskDoc, item);
+                            }
+                        } catch (e) {
+                            console.error("Error resetting data:", e);
+                        }
+                    } else {
                         this.tasks = JSON.parse(JSON.stringify(INITIAL_TASKS));
-                        this.clearFilters();
+                        this.saveToLocalStorage();
                     }
+                    this.clearFilters();
                 },
+
+                cancelConfirm() {
+                    this.confirmDialog.show = false;
+                },
+
+                executeConfirm() {
+                    if (this.confirmDialog.action) {
+                        this.confirmDialog.action();
+                    }
+                    this.confirmDialog.show = false;
+                },
+
                 printTasks() {
                     window.print();
                 }
             }
-        }).mount('#app');
+        });
+
+        vueApp.mount('#app');
     </script>
 </body>
 </html>
